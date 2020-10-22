@@ -82,6 +82,18 @@
     group: '{{ boundary_group }}'
     mode: '0770'
 
+- name: check mlock capability
+  become: true
+  command: "setcap cap_ipc_lock=+ep {{ boundary_install_directory }}/boundary"
+  changed_when: false  # read-only task
+  ignore_errors: true
+  register: mlock_capability
+
+- name: enable non root mlock capability
+  become: true
+  command: "setcap cap_ipc_lock=+ep {{ boundary_install_directory }}/boundary"
+  when: mlock_capability is failed
+
 - name: templating out Boundary worker configuration
   block:
     - name: templating out boundary worker configuration file
