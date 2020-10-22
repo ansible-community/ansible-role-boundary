@@ -84,15 +84,15 @@
 
 - name: check mlock capability
   become: true
-  command: "setcap cap_ipc_lock=+ep {{ boundary_install_directory }}/boundary"
+  shell: "getcap {{ boundary_install_directory }}/boundary|grep cap_ipc_lock+ep"
   changed_when: false  # read-only task
-  ignore_errors: true
+  failed_when: false
   register: mlock_capability
 
 - name: enable non root mlock capability
   become: true
   command: "setcap cap_ipc_lock=+ep {{ boundary_install_directory }}/boundary"
-  when: mlock_capability is failed
+  when: mlock_capability.rc|int == 1
 
 - name: templating out Boundary worker configuration
   block:
