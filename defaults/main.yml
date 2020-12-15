@@ -1,14 +1,14 @@
 ---
 # Package installation
 boundary_install_package: true
-boundary_version: '0.1.0'
+boundary_version: '0.1.2'
 boundary_autocomplete_state: file # can be changed to absent
 
 # Config files can be customized
 boundary_home_directory: '/etc/boundary.d'
 boundary_worker_file: '{{ boundary_home_directory }}/boundary-worker.hcl'
 boundary_controller_file: '{{ boundary_home_directory }}/boundary-controller.hcl'
-boundary_install_directory: "'/usr/bin' if boundary_installl_package == true else '{{ boundary_data_directory }}/bin'"
+boundary_install_directory: "'/usr/bin' if boundary_install_package == true else '{{ boundary_data_directory }}/bin'"
 
 # Database initialization from https://www.boundaryproject.io/docs/installing/no-gen-resources
 # Clear this value to pre-populate an example admin, organization, and project in the DB
