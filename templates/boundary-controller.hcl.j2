@@ -5,7 +5,7 @@ controller {
   description = "Boundary controller."
 
   database {
-      url = "postgresql://{{ boundary_psql_username }}:{{ boundary_psql_password }}@{{ boundary_psql_endpoint }}/{{ boundary_psql_dbname }}""
+      url = "postgresql://{{ boundary_psql_username }}:{{ boundary_psql_password }}@{{ boundary_psql_endpoint }}/{{ boundary_psql_dbname }}"
   }
 }
 
@@ -35,66 +35,50 @@ listener "tcp" {
   tls_disable = {{ boundary_tls_disable | lower }}
 }
 
-{% if boundary_kms_type == 'gcpckms' %}
+{% for key_type in ['root', 'worker-auth', 'recovery'] %}
+{% if boundary_kms_type == 'aead' %}
+kms "aead" {
+  purpose   = "{{ key_type }}"
+  aead_type = "aes-gcm"
+  key_id    = "global_{{ key_type }}"
+  key       = "{{ boundary_aead_keys[key_type] }}"
+}
+{% elif boundary_kms_type == 'awskms' %}
+kms "awskms" {
+  purpose    = "{{ key_type }}"
+  region     = "{{ region }}"
+  kms_key_id = "{{ boundary_awskms_keys[key_type] }}"
+{% if boundary_awskms_endpoint != '' %}
+  endpoint   = "{{ boundary_awskms_endpoint }}"
+{% endif %}
+}
+{% elif boundary_kms_type == 'gcpckms' %}
 kms "gcpckms" {
-  purpose     = "root"
+  purpose     = "{{ key_type }}"
+  credentials = "{{ boundary_gcpckms_credentials }}"
   project     = "{{ boundary_gcpckms_project }}"
   region      = "{{ boundary_gcpckms_region }}"
   key_ring    = "{{ boundary_gcpckms_keyring }}"
-  crypto_key  = "{{ boundary_gcpckms_key }}"
+  crypto_key  = "{{ boundary_gcpckms_keys[key_type] }}"
 }
-
-kms "gcpckms" {
-  purpose     = "worker-auth"
-  project     = "{{ boundary_gcpckms_project }}"
-  region      = "{{ boundary_gcpckms_region }}"
-  key_ring    = "{{ boundary_gcpckms_keyring }}"
-  crypto_key  = "{{ boundary_gcpckms_key }}"
-}
-
-kms "gcpckms" {
-  purpose     = "recovery"
-  project     = "{{ boundary_gcpckms_project }}"
-  region      = "{{ boundary_gcpckms_region }}"
-  key_ring    = "{{ boundary_gcpckms_keyring }}"
-  crypto_key  = "{{ boundary_gcpckms_key }}"
-}
-
 {% elif boundary_kms_type == 'transit' %}
 kms "transit" {
-  purpose            = "root"
+  purpose            = "{{ key_type }}"
   address            = "https://{{ groups.vault_instances[0] }}:8200"
   token              = "{{ lookup('env','VAULT_TOKEN') }}"
-  disable_renewal    = "false"
+  disable_renewal    = "{{ boundary_transit_disable_renewal |default('false') }}"
 
   // Key configuration
-  key_name           = "transit_key_name"
-  mount_path         = "transit/"
-  namespace          = "ns1/"
+  mount_path         = "{{ boundary_transit_mount_path }}"
+  namespace          = "{{ boundary_transit_namespace }}"
+  key_name           = "{{ boundary_transit_keys[key_type] }}"
 
   // TLS Configuration
-  tls_ca_cert        = "{{ boundary_tls_config_path }}/{{ boundary_tls_ca_file }}"
-  tls_client_cert    = "{{ boundary_tls_config_path }}/{{ boundary_tls_cert_file }}"
-  tls_client_key     = "{{ boundary_tls_config_path }}/{{ boundary_tls_key_file }}"
-  tls_server_name    = "{{ groups.vault_instances[0] }}"
-  tls_skip_verify    = "false"
-}
-kms "transit" {
-  purpose            = "worker-auth"
-  address            = "https://{{ groups.vault_instances[0] }}:8200"
-  token              = "{{ lookup('env','VAULT_TOKEN') }}"
-  disable_renewal    = "false"
-
-  // Key configuration
-  key_name           = "transit_key_name"
-  mount_path         = "transit/"
-  namespace          = "ns1/"
-
-  // TLS Configuration
-  tls_ca_cert        = "{{ boundary_tls_config_path }}/{{ boundary_tls_ca_file }}"
-  tls_client_cert    = "{{ boundary_tls_config_path }}/{{ boundary_tls_cert_file }}"
-  tls_client_key     = "{{ boundary_tls_config_path }}/{{ boundary_tls_key_file }}"
-  tls_server_name    = "{{ groups.vault_instances[0] }}"
-  tls_skip_verify    = "false"
+  tls_server_name    = "{{ boundary_transit_tls_server_name |default(groups.vault_instances[0]) }}"
+  tls_ca_cert        = "{{ boundary_transit_tls_ca_file     |default('') }}"
+  tls_client_cert    = "{{ boundary_transit_tls_cert_file   |default('') }}"
+  tls_client_key     = "{{ boundary_transit_tls_key_file    |default('') }}"
+  tls_skip_verify    = "{{ boundary_transit_tls_skip_verify |default('false') }}"
 }
 {% endif %}
+{% endfor %}

@@ -1,10 +1,8 @@
-Ansible Role: HashiCorp Boundary
-=========
+# Ansible Role: HashiCorp Boundary
 
 A role to deploy [HashiCorp Boundary](https://www.boundaryproject.io/)
 
-Requirements
-------------
+## Requirements
 
 - A PostgreSQL instance that Boundary workers can reach and authenticate to. The database you plan to use must also exist.
 - Access to a KMS solution. This role currently only supports Google Cloud KMS.
@@ -61,66 +59,33 @@ If you are building a PoC to learn and explore, you may want to remove this valu
 boundary_db_init_flags: '-skip-initial-login-role'
 ```
 
-### Type of KMS to use.
+### Type of KMS
 
-```YAML
-boundary_kms_type: 'gcpckms'
-```
-Or
-```YAML
-boundary_kms_type: 'transit'
-```
+As these choices are radically different depending on your KMS, refer to one of these examples:
 
-Dependencies
-------------
+- [GCP CKMS](examples/kms_gcp.md)
+- [AWS KMS](examples/kms_aws.md)
+- [Hashicorp Vault - Transit secrets engine](examples/kms_transit.md)
+- [Static AEAD Keys](examples/kms_aead.md) - not suitable for production use
+
+## Dependencies
 
 None.
 
-Example Project with Vault KMS
-------------------------------
+## Instructions
+
+If you are new to Ansible playbooks and group vars, the following examples can guide you:
+
+- Creating [Boundary Playbook](examples/playbook.md)
+- Creating [Boundary Group Vars](examples/group_vars.md)
+
+## Example Project with Vault KMS
+
+The following is a project utilizing an early version of this module
+
 https://github.com/dockpack/vault\_dojo.git
 
-
-Example Playbook
-----------------
-The following deploys a single Boundary controller and worker node.
-
-Create an inventory file:
-```bash
-$ cat > inventory <<EOF
-[boundary_controllers]
-192.168.0.100
-
-[boundary_workers]
-192.168.0.101
-EOF
-```
-
-Create the group_vars directory and file:
-```bash
-# ensure the group_vars directory exists
-$ mkdir group_vars/
-
-# create the group_vars file for all hosts
-$ cat > group_vars/all.yml <<EOF
----
-boundary_psql_endpoint: ''
-boundary_psql_username: ''
-
-boundary_gcpckms_project: ''
-boundary_gcpckms_region: ''
-boundary_gcpckms_keyring: ''
-boundary_gcpckms_key: ''
-EOF
-```
-
-Run the playbook (Boundary PSQL password should be passed through a more secure method so it isn't shown in plaintext):
-```bash
-$ ansible-playbook -i inventory site.yml --extra-vars "boundary_psql_password=''"
-```
-
-Author Information
-------------------
+## Author Information
 
 Jacob Mammoliti
 Bas Meijer
