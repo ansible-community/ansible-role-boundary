@@ -1,6 +1,6 @@
 ---
 language: python
-python: "2.7"
+python: "3.9"
 
 # Use the new container infrastructure
 sudo: false
@@ -11,10 +11,12 @@ addons:
     packages:
       - python-pip
 
+before_install:
+  - python -m pip install --upgrade pip
+
 install:
   # Install ansible
-  - pip install ansible
-  - pip install ansible-base
+  - pip3 install ansible ansible-base
 
   # Check ansible version
   - ansible --version
