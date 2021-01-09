@@ -1,7 +1,7 @@
 ---
 # Package installation
 boundary_install_package: true
-boundary_version: '0.1.2'
+boundary_version: '0.1.4'
 boundary_autocomplete_state: file # can be changed to absent
 
 # Config files can be customized

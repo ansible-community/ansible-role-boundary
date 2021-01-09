@@ -1,10 +1,8 @@
-Ansible Role: HashiCorp Boundary
-=========
+# Ansible Role: HashiCorp Boundary
 
 A role to deploy [HashiCorp Boundary](https://www.boundaryproject.io/)
 
-Requirements
-------------
+## Requirements
 
 - A PostgreSQL instance that Boundary workers can reach and authenticate to. The database you plan to use must also exist.
 - Access to a KMS solution. This role currently only supports Google Cloud KMS.
@@ -40,12 +38,13 @@ boundary_install_directory: '{{ boundary_data_directory }}/bin'
 ```
 
 ## Configuration Variables
+
 Ansible variables are listed below, along with the default values (see `default/main.yml`):
 
 Where to place Boundary's configuration data.
 
 ```YAML
-boundary_version: '1.2'
+boundary_version: '0.1.4'
 boundary_home_directory: '/etc/boundary.d'
 boundary_config_file: '{{ boundary_home_directory }}/boundary-worker.hcl'
 boundary_server_file: '{{ boundary_home_directory }}/boundary-controller.hcl'
@@ -61,7 +60,7 @@ If you are building a PoC to learn and explore, you may want to remove this valu
 boundary_db_init_flags: '-skip-initial-login-role'
 ```
 
-### Type of KMS to use.
+### Type of KMS to use
 
 ```YAML
 boundary_kms_type: 'gcpckms'
@@ -71,21 +70,20 @@ Or
 boundary_kms_type: 'transit'
 ```
 
-Dependencies
-------------
+## Dependencies
 
 None.
 
-Example Project with Vault KMS
-------------------------------
+## Example Project with Vault KMS
+
 https://github.com/dockpack/vault\_dojo.git
 
+## Example Playbook
 
-Example Playbook
-----------------
 The following deploys a single Boundary controller and worker node.
 
 Create an inventory file:
+
 ```bash
 $ cat > inventory <<EOF
 [boundary_controllers]
@@ -97,6 +95,7 @@ EOF
 ```
 
 Create the group_vars directory and file:
+
 ```bash
 # ensure the group_vars directory exists
 $ mkdir group_vars/
@@ -115,12 +114,13 @@ EOF
 ```
 
 Run the playbook (Boundary PSQL password should be passed through a more secure method so it isn't shown in plaintext):
+
 ```bash
 $ ansible-playbook -i inventory site.yml --extra-vars "boundary_psql_password=''"
 ```
 
-Author Information
-------------------
+## Author Information
 
 Jacob Mammoliti
 Bas Meijer
+Jo Rhett
