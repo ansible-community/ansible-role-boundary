@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.0.0]
+
+### Breaking Changes
+
+- `boundary_psql_*` variables have been combined into the dict `boundary_database` for complete customization
+- Boundary will shut down the controllers and migrate the database if the boundary package is updated
+- `boundary_tls_disable` is now false by default
+- All `boundary_kms_*` parameters have been obsoleted in favor of a map which can hold any documented value.
+  The map keys and values should exactly match the Hashicorp documented parameter(s) going forward.
+
+### Added
+
+- `boundary_database` dict can include these previously unavailable keys (plus any more added in the future)
+  - `migration_url`
+  - `max_open_connections`
+- `boundary_start_services` Boolean - defaults to `true` unless Molecule is running
+- `boundary_controller_service` String - defaults to `boundary-controller`
+- `boundary_controller_parameters` Map - can use used to set other controller params
+  - 'public_cluster_addr' is necesssary for AWS nodes with EIP
+- `boundary_worker_service` String - defaults to `boundary-worker`
+- `boundary_worker_tags` Map[String, Array] - can provide a list of worker tags for directed routing
+- `boundary_worker_parameters` Map - can use used to set other worker params
+  - 'public_addr' is necesssary for AWS nodes with EIP
+- `boundary_worker_controllers` List - IPs to contact controllers on (default: IPs from boundary_controllers node group)
+- `boundary_cors_allowed_origins` may be specified
+- Node group names can be longer, search is made on substring of group name
+
 ## [v1.0.3]
 
 ### Fixed

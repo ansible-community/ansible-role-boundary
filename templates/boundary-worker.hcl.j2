@@ -1,70 +1,45 @@
 listener "tcp" {
   address = "{{ boundary_address }}:9202"
   purpose = "proxy"
-{% for option, value in boundary_worker_listener_parameters %}
+{% for option, value in boundary_worker_listener_parameters.items() %}
   {{ option }} = "{{ value }}"
 {% endfor %}
 }
 
 worker {
-  name = "{{ ansible_hostname }}-worker"
+  name = "{{ ansible_hostname }}"
   description = "Boundary worker."
 
-  # Workers must be able to reach controllers on :9202
+  # Workers must be able to reach controllers on :9201
   controllers = [
-{% for controller in groups['boundary_controllers'] %}
-{% if 'ansible_default_ipv4' in hostvars[controller] %}
+{% for controller in boundary_worker_controllers %}
+{% if controller == inventory_hostname %}
+{# Boundary can't always reach its own public IP address, so use local IP #}
     "{{ hostvars[controller]['ansible_default_ipv4']['address'] }}",
+{% else %}
+    "{{ controller }}",
 {% endif %}
 {% endfor %}
   ]
-  public_addr = "{{ inventory_hostname }}"
-}
-
-{% for key_type in ['worker-auth'] %}
-{% if boundary_kms_type == 'aead' %}
-kms "aead" {
-  purpose   = "{{ key_type }}"
-  aead_type = "aes-gcm"
-  key_id    = "global_{{ key_type }}"
-  key       = "{{ boundary_aead_keys[key_type] }}"
-}
-{% elif boundary_kms_type == 'awskms' %}
-kms "awskms" {
-  purpose    = "{{ key_type }}"
-  region     = "{{ boundary_awskms_region }}"
-  kms_key_id = "{{ boundary_awskms_keys[key_type] }}"
-{% if boundary_awskms_endpoint is defined and boundary_awskms_endpoint != '' %}
-  endpoint   = "{{ boundary_awskms_endpoint }}"
-{% endif %}
-}
-{% elif boundary_kms_type == 'gcpckms' %}
-kms "gcpckms" {
-  purpose     = "{{ key_type }}"
-  credentials = "{{ boundary_gcpckms_credentials }}"
-  project     = "{{ boundary_gcpckms_project }}"
-  region      = "{{ boundary_gcpckms_region }}"
-  key_ring    = "{{ boundary_gcpckms_keyring }}"
-  crypto_key  = "{{ boundary_gcpckms_keys[key_type] }}"
-}
-{% elif boundary_kms_type == 'transit' %}
-kms "transit" {
-  purpose            = "{{ key_type }}"
-  address            = "https://{{ groups.vault_instances[0] }}:8200"
-  token              = "{{ lookup('env','VAULT_TOKEN') }}"
-  disable_renewal    = "{{ boundary_transit_disable_renewal |default('false') }}"
-
-  // Key configuration
-  key_name           = "{{ boundary_transit_keys[key_type] }}"
-  namespace          = "{{ boundary_transit_namespace }}"
-  mount_path         = "{{ boundary_transit_mount_path }}"
-
-  // TLS Configuration
-  tls_server_name    = "{{ boundary_transit_tls_server_name |default(groups.vault_instances[0]) }}"
-  tls_ca_cert        = "{{ boundary_transit_tls_ca_file     |default('') }}"
-  tls_client_cert    = "{{ boundary_transit_tls_cert_file   |default('') }}"
-  tls_client_key     = "{{ boundary_transit_tls_key_file    |default('') }}"
-  tls_skip_verify    = "{{ boundary_transit_tls_skip_verify |default('false') }}"
-}
-{% endif %}
+{% for option, value in boundary_worker_parameters.items() %}
+  {{ option }} = "{{ value }}"
 {% endfor %}
+
+  # Tags allow for traffic and target routing
+  tags {
+{% for tag, values in boundary_worker_tags.items() %}
+    "{{ tag }}" = [
+{% for value in values %}
+      "{{ value }}"
+{% endfor %}
+    ]
+{% endfor %}
+  }
+}
+
+kms "{{ boundary_kms_type }}" {
+  purpose = "worker-auth"
+{% for param, value in boundary_kms['worker-auth'].items() %}
+  {{ param }} = "{{ value }}"
+{% endfor %}
+}

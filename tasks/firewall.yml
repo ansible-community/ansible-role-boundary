@@ -7,8 +7,7 @@
   become: true
   block:
     - name: open boundary-controller tcp port
-      when:
-        - "'boundary_controllers' in group_names"
+      when: group_names is search('boundary_controllers')
       firewalld:
         port: "{{ item }}/tcp"
         permanent: true
@@ -18,8 +17,7 @@
         - 9200
 
     - name: open boundary-worker tcp port
-      when:
-        - "'boundary_workers' in group_names"
+      when: group_names is search('boundary_workers')
       firewalld:
         port: "{{ item }}/tcp"
         permanent: true
@@ -36,7 +34,7 @@
   become: true
   block:
     - name: open boundary-controller tcp port
-      when: "'boundary_controllers' in group_names"
+      when: group_names is search('boundary_controllers')
       community.general.ufw:
         name: Boundary Controller API
         state: enabled
@@ -47,7 +45,7 @@
         - 9200
 
     - name: open boundary-worker tcp port
-      when: "'boundary_workers' in group_names"
+      when: group_names is search('boundary_workers')
       community.general.ufw:
         name: Boundary Worker API
         state: enabled

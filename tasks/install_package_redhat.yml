@@ -15,3 +15,7 @@
   yum:
     name: "boundary-{{ boundary_version }}"
   become: true
+  register: boundary_package
+  notify:
+    - restart boundary-controller daemon
+    - restart boundary-worker daemon

@@ -1,6 +1,6 @@
 ---
 - name: templating out Boundary controller configuration
-  when: "'boundary_controllers' in group_names"
+  when: group_names is search('boundary_controllers')
   become: true
   block:
     - name: templating out boundary controller configuration file
@@ -20,25 +20,12 @@
         owner: root
         group: root
         mode: '0644'
+      register: controller_service_script
       notify:
-        - reload boundary-controller daemon
-
-    - name: initializing database for boundary
-      command: "{{ boundary_command }} database init -config {{ boundary_controller_file }} {{ boundary_db_init_flags }}"
-      run_once: True
-      register: boundary_database_init
-      changed_when: boundary_database_init.stdout != 'Database already initialized.'
-      when: not lookup('env', 'MOLECULE_FILE')  # skip when testing for now
-
-    - name: starting and enabling boundary-controller
-      systemd:
-        name: boundary-controller
-        enabled: yes
-        state: started
-      when: not lookup('env', 'MOLECULE_FILE')  # skip when testing for now
+        - restart boundary-controller daemon
 
 - name: templating out Boundary worker configuration
-  when: "'boundary_workers' in group_names"
+  when: group_names is search('boundary_workers')
   become: true
   block:
     - name: templating out boundary worker configuration file
@@ -58,12 +45,13 @@
         owner: root
         group: root
         mode: '0644'
+      register: worker_service_script
       notify:
-        - reload boundary-worker daemon
+        - restart boundary-worker daemon
 
-    - name: starting and enabling boundary-worker
-      systemd:
-        name: boundary-worker
-        enabled: yes
-        state: started
-      when: not lookup('env', 'MOLECULE_FILE')  # skip when testing for now
+# Must do this before we scan for service status
+- name: reload systemd config if necessary
+  systemd:
+    daemon_reload: yes
+  become: true
+  when: worker_service_script is changed or controller_service_script is changed

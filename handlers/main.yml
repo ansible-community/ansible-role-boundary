@@ -1,30 +1,14 @@
 ---
 - name: restart boundary-controller daemon
-  systemd:
-    name: boundary-controller
-    state: restarted
-  when: not lookup('env', 'MOLECULE_FILE')  # skip when testing for now
   become: true
+  systemd:
+    name: "{{ boundary_controller_service }}"
+    state: "{{ 'restarted' if ansible_facts.services[boundary_controller_service].state == 'running' else 'started' }}"
+  when: boundary_start_services|bool and group_names is search('boundary_controllers')
 
 - name: restart boundary-worker daemon
-  systemd:
-    name: boundary-worker
-    state: restarted
-  when: not lookup('env', 'MOLECULE_FILE')  # skip when testing for now
   become: true
-
-- name: reload boundary-controller daemon
   systemd:
-    name: boundary-controller
-    state: restarted
-    daemon_reload: yes
-  when: not lookup('env', 'MOLECULE_FILE')  # skip when testing for now
-  become: true
-
-- name: reload boundary-worker daemon
-  systemd:
-    name: boundary-worker
-    state: restarted
-    daemon_reload: yes
-  when: not lookup('env', 'MOLECULE_FILE')  # skip when testing for now
-  become: true
+    name: "{{ boundary_worker_service }}"
+    state: "{{ 'restarted' if ansible_facts.services[boundary_worker_service].state == 'running' else 'started' }}"
+  when: boundary_start_services|bool and group_names is search('boundary_workers')

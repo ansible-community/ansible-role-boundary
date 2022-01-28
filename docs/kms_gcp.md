@@ -1,6 +1,6 @@
 # Boundary GCP CKMS configuration
 
-Based on [https://www.boundaryproject.io/docs/configuration/kms/gcpckms]
+All values used here are documented at [Boundary /docs/configuration/kms/gcpckms](https://www.boundaryproject.io/docs/configuration/kms/gcpckms).
 
 ## Requirements
 
@@ -12,23 +12,22 @@ Create a group_vars file for boundary controller nodes
 
 ### `group_vars/boundary_controllers.yml`
 
-Add the KMS instance details
+Add the KMS instance details and the KMS key ids for each type
 
 ```YAML
-# KMS location and auth
 boundary_kms_type: 'gcpckms'
-boundary_gcpckms_project: 'foo-bar'
-boundary_gcpckms_credentials: '/etc/boundary.d/kms-credentials.json'
-boundary_gcpckms_region: 'us-central1'
-boundary_gcpckms_keyring: 'bar-foo'
+boundary_kms:
+  root:
+    project: 'foo-bar'
+    credentials: '/etc/boundary.d/kms-credentials.json'
+    region: 'us-central1'
+    key_ring: 'bar-foo'
+    crypto_key: '--Cloud KMS resource ID--'
+  worker-auth:
+    *REPLACE*ME*
+  recovery:
+    *REPLACE*ME*
 ```
 
-Add the KMS key ids for each type
-
-```YAML
-# KMS key IDs
-boundary_gcpckms_keys:
-  root: '--Cloud KMS resource ID--'
-  worker-auth: '--Cloud KMS resource ID--'
-  recovery: '--Cloud KMS resource ID--'
-```
+Use appropriate values for the worker and recovery keys. Any valid value from
+[Boundary /docs/configuration/kms/gcpckms](https://www.boundaryproject.io/docs/configuration/kms/gcpckms) can be used here.

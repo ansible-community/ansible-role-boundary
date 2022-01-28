@@ -1,7 +1,7 @@
 ---
 # Package installation
 boundary_install_package: true
-boundary_version: '0.1.4'
+boundary_version: '0.7.5'
 boundary_autocomplete_state: file  # can be changed to absent
 
 # Config files can be customized
@@ -10,6 +10,20 @@ boundary_worker_file: '{{ boundary_home_directory }}/worker.hcl'
 boundary_controller_file: '{{ boundary_home_directory }}/controller.hcl'
 boundary_install_directory: "{{ '/usr/bin' if boundary_install_package|bool else '{{ boundary_data_directory }}/bin' }}"
 boundary_command: "{{ boundary_install_directory }}/boundary"
+
+# Services
+boundary_start_services: "{{ lookup('env', 'MOLECULE_FILE') == '' }}"  # don't start if testing
+boundary_controller_service: "boundary-controller{{ '.service' if ansible_service_mgr == 'systemd' }}"
+boundary_controller_parameters: {}
+boundary_worker_service: "boundary-worker{{ '.service' if ansible_service_mgr == 'systemd' }}"
+boundary_worker_parameters: {}
+boundary_worker_controllers: "{{ groups['boundary_controllers'] }}"
+boundary_worker_tags: {}
+
+# https://www.boundaryproject.io/docs/configuration/controller#database
+boundary_database:
+  # default from https://learn.hashicorp.com/tutorials/boundary/getting-started-dev?in=boundary/getting-started#start-a-dev-environment
+  url: 'postgres://postgres:password@localhost:55001/boundary?sslmode=disable'
 
 # Database initialization from https://www.boundaryproject.io/docs/installing/no-gen-resources
 # Clear this value to pre-populate an example admin, organization, and project in the DB
@@ -42,22 +56,28 @@ boundary_shasums: "boundary_{{ boundary_version }}_SHA256SUMS"
 boundary_zip_url: "{{ boundary_url }}/{{ boundary_version }}/boundary_{{ boundary_version }}_{{ boundary_os }}_{{ boundary_architecture }}.zip"
 boundary_checksum_file_url: "{{ boundary_url }}/{{ boundary_version }}/{{ boundary_shasums }}"
 
-# Database
-boundary_psql_username: boundary
-boundary_psql_dbname: boundary
-
 # KMS Configuration - default to Hashicorp dev build keys
 #  only suitable for learning, as documented at https://www.boundaryproject.io/docs/configuration/kms/aead
 boundary_kms_type: 'aead'
-boundary_aead_keys:
-  root: 'sP1fnF5Xz85RrXyELHFeZg9Ad2qt4Z4bgNHVGtD6ung='
-  worker-auth: '8fZBjCUfN0TzjEGLQldGY4+iE9AkOvCfjh7+p0GtRBQ='
-  recovery: '8fZBjCUfN0TzjEGLQldGY4+iE9AkOvCfjh7+p0GtRBQ='
+boundary_kmsk:
+  root:
+    aead_type: 'aes-gcm'
+    key_id: 'global_root'
+    key: 'sP1fnF5Xz85RrXyELHFeZg9Ad2qt4Z4bgNHVGtD6ung='
+  worker-auth:
+    aead_type: 'aes-gcm'
+    key_id: 'global_worker_auth'
+    key: '8fZBjCUfN0TzjEGLQldGY4+iE9AkOvCfjh7+p0GtRBQ='
+  recovery:
+    aead_type: 'aes-gcm'
+    key_id: 'global_recovery'
+    key: '8fZBjCUfN0TzjEGLQldGY4+iE9AkOvCfjh7+p0GtRBQ='
 
 # Listener management
 boundary_client_addr: '0.0.0.0'
-boundary_tls_disable: true
+boundary_tls_disable: false
 boundary_cors_enabled: false
+boundary_cors_allowed_origins: ['*']
 boundary_disable_mlock: true
 
 # Keys should be parameter names from listener docs

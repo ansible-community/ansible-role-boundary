@@ -20,11 +20,14 @@ EOF
 $ echo "---" > group_vars/boundary_workers.yml
 $ cat > group_vars/boundary_controllers.yml <<EOF
 ---
-boundary_psql_endpoint: 'pgsql.example.com:5432'
+boundary_db_url: 'postgresql://{{ boundary_db_user}}:{{ boundary_db_pass }}@pgsql.example.com:5432/boundary'
 EOF
 ```
 
-## Database credentials
+You can optionally use a different url for admin operations (init, migrate) versus normal operations.
+Add `boundary_db_migration_url` to the group vars.
+
+### Source database credentials from a secure place
 
 You'll need to source the username and password for the database from someplace secure.
 If you don't have a secrets vault deployed, follow the Ansible guide:

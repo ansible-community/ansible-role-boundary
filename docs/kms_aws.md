@@ -1,6 +1,6 @@
 # Boundary AWS KMS configuration
 
-Based on [https://www.boundaryproject.io/docs/configuration/kms/awskms]
+All values used here are documented at [Boundary /docs/configuration/kms/awskms](https://www.boundaryproject.io/docs/configuration/kms/awskms).
 
 ## Requirements
 
@@ -25,21 +25,29 @@ Add the KMS instance details
 
 ```YAML
 # KMS location and auth
-boundary_kms_type: 'awskms'
-boundary_awskms_region: 'us-east-1'
 ```
 
 Add the KMS key ids for each type
 
 ```YAML
-# KMS key IDs
-boundary_awskms_keys:
-  root: 'arn:aws:kms:**region**:**acount**:key/**key-id**'
-  worker-auth: 'arn:aws:kms:**region**:**acount**:key/**key-id**'
-  recovery: 'arn:aws:kms:**region**:**acount**:key/**key-id**'
+boundary_kms_type: 'awskms'
+boundary_kms:
+  root:
+    region: 'us-east-1'
+    kms_key_id: 'arn:aws:kms:**region**:**acount**:key/**key-id**'
+  worker-auth:
+    region: 'us-east-1'
+    kms_key_id: 'arn:aws:kms:**region**:**acount**:key/**key-id**'
+  recovery:
+    region: 'us-east-1'
+    kms_key_id: 'arn:aws:kms:**region**:**acount**:key/**key-id**'
 ```
 
-## Utilizing a non-default KMS Endpoint
+### Other values can be supplied
+
+Any of the values documented at [Boundary /docs/configuration/kms/awskms](https://www.boundaryproject.io/docs/configuration/kms/awskms) can be used
+
+### Utilizing a non-default KMS Endpoint
 
 This is useful when connecting to KMS over a VPC Endpoint. If not set, Boundary will use the default API endpoint for your region.
 

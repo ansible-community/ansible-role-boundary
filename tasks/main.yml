@@ -54,7 +54,7 @@
   become: true
 
 - name: install API TLS certificates
-  when: not boundary_tls_disable|bool
+  when: not boundary_tls_disable|bool and group_names is search('boundary_controllers')
   include_tasks: tls_api.yml
 
 - name: install Vault Transit TLS certificates
@@ -64,10 +64,15 @@
 - name: configure boundary
   include_tasks: config.yml
 
+# Get the service list after creating service
 - name: collect facts about system services
   service_facts:
-  register: services_state
   become: true
+  check_mode: no  # always run
+
+- name: Database tasks
+  include_tasks: database.yml
+  when: group_names is search('boundary_controllers')
 
 - name: configure firewall
   include_tasks: firewall.yml

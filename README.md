@@ -6,7 +6,7 @@ A role to deploy [HashiCorp Boundary](https://www.boundaryproject.io/)
 
 - A PostgreSQL instance that Boundary workers can reach and authenticate to. The database you plan to use must also exist.
 - Access to a KMS solution. This role currently only supports Google Cloud KMS.
-- Nodes must be in inventory groups `boundary_controller` or `boundary_worker` to receive configuration for that service.
+- Nodes must be in inventory groups with the substring `boundary_controller` or `boundary_worker` in their name to receive configuration for that service.
   A node in both groups is configured to run both services.
 
 ## Installation Variables
@@ -76,6 +76,9 @@ It defaults to the static AEAD key configuration documented at [https://www.boun
 ```YAML
 boundary_kms_type: 'aead'
 ```
+
+Any and all supported kms types can work here, whether examples are listed above or not. All values should be placed in
+a map named `boundary_kms` under a distinct name for each key type.
 
 ## TLS Configuration
 

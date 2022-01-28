@@ -1,0 +1,39 @@
+---
+# Is this a new installation?
+- name: Initialize database for Boundary
+  command: "{{ boundary_command }} database migrate -config {{ boundary_controller_file }} {{ boundary_db_init_flags }}"
+  register: boundary_database_init
+  become: true
+  become_user: "{{ boundary_user }}"
+  run_once: True
+  changed_when: boundary_database_init.stdout != 'Database already initialized.'
+  when: >
+    ansible_facts.services[boundary_controller_service].state != 'running'
+    and boundary_package is changed
+  tags:
+    - boundary_db_init
+
+# If it is already running, then a migration may be required
+- name: Migrate database if Boundary was upgraded
+  run_once: True
+  when: >
+    ansible_facts.services[boundary_controller_service].state == 'running'
+    and boundary_package is changed
+  block:
+    - name: Stop Boundary
+      become: true
+      become_user: root
+      systemd:
+        name: boundary-controller
+        state: stopped
+      tags:
+        - boundary_db_migrate
+
+    - name: Migrate database
+      command: "{{ boundary_command }} database migrate -config {{ boundary_controller_file }}"
+      register: boundary_database_migrate
+      become: true
+      become_user: "{{ boundary_user }}"
+      changed_when: boundary_database_init.stdout != 'Database already initialized.'
+      when: ansible_facts.services[boundary_controller_service].state != 'running'
+

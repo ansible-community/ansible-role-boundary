@@ -62,6 +62,7 @@
   when: not boundary_package.stat.exists | bool
 
 - name: unarchive boundary and install binary
+  become: true
   unarchive:
     remote_src: true
     src: '/tmp/boundary/{{ boundary_archive }}'
@@ -71,7 +72,10 @@
     mode: '0770'
   tags:
     - install
-  become: true
+  register: boundary_package
+  notify:
+    - restart boundary-controller daemon
+    - restart boundary-worker daemon
 
 - name: check mlock capability
   become: true
@@ -84,4 +88,3 @@
   become: true
   command: "setcap cap_ipc_lock=+ep {{ boundary_install_directory }}/boundary"
   when: mlock_capability.rc|int == 1
-  become: true

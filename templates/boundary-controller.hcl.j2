@@ -1,12 +1,17 @@
 disable_mlock = {{ boundary_disable_mlock | lower }}
 
 controller {
-  name = "{{ ansible_hostname }}-controller"
+  name = "{{ ansible_hostname }}"
   description = "Boundary controller."
 
   database {
-      url = "postgresql://{{ boundary_psql_username }}:{{ boundary_psql_password }}@{{ boundary_psql_endpoint }}/{{ boundary_psql_dbname }}"
+{% for option, value in boundary_database.items() %}
+    {{ option }} = "{{ value }}"
+{% endfor %}
   }
+{% for option, value in boundary_controller_parameters.items() %}
+  {{ option }} = "{{ value }}"
+{% endfor %}
 }
 
 # localhost API listener
@@ -33,14 +38,18 @@ listener "tcp" {
   tls_ca_file = "{{ boundary_api_tls_ca_file }}"
 {% endif %}
 {% endif %}
-{% for option, value in boundary_api_listener_parameters %}
+{% for option, value in boundary_api_listener_parameters.items() %}
   {{ option }} = "{{ value }}"
 {% endfor %}
 
   # Enable CORS for the Admin UI
   cors_enabled = {{ boundary_cors_enabled | lower }}
 {% if boundary_cors_enabled %}
-  cors_allowed_origins = ["*"]
+  cors_allowed_origins = [
+{% for origin in boundary_cors_allowed_origins %}
+    "{{ origin }}",
+{% endfor %}
+  ]
 {% endif %}
 }
 
@@ -50,55 +59,16 @@ listener "tcp" {
   address = "{{ boundary_address }}:9201"
   # The purpose of this listener
   purpose = "cluster"
-{% for option, value in boundary_cluster_listener_parameters %}
+{% for option, value in boundary_cluster_listener_parameters.items() %}
   {{ option }} = "{{ value }}"
 {% endfor %}
 }
 
-{% for key_type in ['root', 'worker-auth', 'recovery'] %}
-{% if boundary_kms_type == 'aead' %}
-kms "aead" {
-  purpose   = "{{ key_type }}"
-  aead_type = "aes-gcm"
-  key_id    = "global_{{ key_type }}"
-  key       = "{{ boundary_aead_keys[key_type] }}"
+{% for purpose in ['root', 'worker-auth', 'recovery'] %}
+kms "{{ boundary_kms_type }}" {
+  purpose = "{{ purpose }}"
+{% for param, value in boundary_kms[purpose].items() %}
+  {{ param }} = "{{ value }}"
+{% endfor %}
 }
-{% elif boundary_kms_type == 'awskms' %}
-kms "awskms" {
-  purpose    = "{{ key_type }}"
-  region     = "{{ boundary_awskms_region }}"
-  kms_key_id = "{{ boundary_awskms_keys[key_type] }}"
-{% if boundary_awskms_endpoint is defined and boundary_awskms_endpoint != '' %}
-  endpoint   = "{{ boundary_awskms_endpoint }}"
-{% endif %}
-}
-{% elif boundary_kms_type == 'gcpckms' %}
-kms "gcpckms" {
-  purpose     = "{{ key_type }}"
-  credentials = "{{ boundary_gcpckms_credentials }}"
-  project     = "{{ boundary_gcpckms_project }}"
-  region      = "{{ boundary_gcpckms_region }}"
-  key_ring    = "{{ boundary_gcpckms_keyring }}"
-  crypto_key  = "{{ boundary_gcpckms_keys[key_type] }}"
-}
-{% elif boundary_kms_type == 'transit' %}
-kms "transit" {
-  purpose            = "{{ key_type }}"
-  address            = "https://{{ groups.vault_instances[0] }}:8200"
-  token              = "{{ lookup('env','VAULT_TOKEN') }}"
-  disable_renewal    = "{{ boundary_transit_disable_renewal |default('false') }}"
-
-  // Key configuration
-  key_name           = "{{ boundary_transit_keys[key_type] }}"
-  namespace          = "{{ boundary_transit_namespace }}"
-  mount_path         = "{{ boundary_transit_mount_path }}"
-
-  // TLS Configuration
-  tls_server_name    = "{{ boundary_transit_tls_server_name |default(groups.vault_instances[0]) }}"
-  tls_ca_cert        = "{{ boundary_transit_tls_ca_file     |default('') }}"
-  tls_client_cert    = "{{ boundary_transit_tls_cert_file   |default('') }}"
-  tls_client_key     = "{{ boundary_transit_tls_key_file    |default('') }}"
-  tls_skip_verify    = "{{ boundary_transit_tls_skip_verify |default('false') }}"
-}
-{% endif %}
 {% endfor %}
