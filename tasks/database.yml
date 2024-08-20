@@ -1,7 +1,7 @@
 ---
 # Is this a new installation?
 - name: Initialize database for Boundary
-  command: "{{ boundary_command }} database migrate -config {{ boundary_controller_file }} {{ boundary_db_init_flags }}"
+  command: "{{ boundary_command }} database init -config {{ boundary_controller_file }} {{ boundary_db_init_flags }}"
   register: boundary_database_init
   become: true
   become_user: "{{ boundary_user }}"
